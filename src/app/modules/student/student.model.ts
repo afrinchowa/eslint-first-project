@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 import validator from "validator";
-import bcrypt from "bcrypt";
+
 import {
   TGuardian,
   TLocalGuardian,
@@ -83,11 +83,13 @@ const studentSchema = new Schema<TStudent, StudentModel>(
       required: [true, "Student ID is required"],
       unique: true,
     },
-    password: {
-      type: String,
-      required: [true, "Student password is required"],
-      maxlength: [20, "Password can not be more than 20 charecters"],
+    user: {
+      type: Schema.Types.ObjectId,
+      required: [true, "User Id is required"],
+      unique: true,
+      ref: "User",
     },
+
     name: {
       type: userNameSchema,
       required: [true, "Student name is required"],
@@ -149,14 +151,7 @@ const studentSchema = new Schema<TStudent, StudentModel>(
       type: String,
       required: [false, "Profile image URL must be a string"],
     },
-    isActive: {
-      type: String,
-      enum: {
-        values: ["active", "blocked"],
-        message: "Status must be 'active' or 'blocked'",
-      },
-      default: "active",
-    },
+
     isDeleted: {
       type: Boolean,
       default: false,
@@ -173,21 +168,7 @@ studentSchema.virtual("fullName").get(function () {
   return `${this.name.firstName} + ${this.name.middleName} + ${this.name.lastName}`;
 });
 
-//pre save middleware/hook
-studentSchema.pre("save", async function (next) {
-  // console.log(this," pre hook:we will save the data")
-  const user = this;
-  //hashing password and save into DB
-  user.password = await bcrypt.hash(
-    user.password,
-    Number(config.bcrypt_salt_rounds)
-  );
-  next();
-});
-//post save middleware/hook
-studentSchema.post("save", function (doc, next) {
-  doc.password = "";
-});
+
 
 //Query middleware
 studentSchema.pre("find", function (next) {
